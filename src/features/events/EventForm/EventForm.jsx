@@ -1,33 +1,12 @@
 import React, { Component } from 'react'
+import { connect } from 'react-redux';
+import cuid from 'cuid';
 import { Segment, Form, Button } from 'semantic-ui-react';
-
-const emptyEvent = {
-    title: '',
-    date: '',
-    city: '',
-    venue: '',
-    hostedBy: '',
-};
+import { createEvent, updateEvent } from '../eventActions';
 
 class EventForm extends Component {
     state = {
-        event: emptyEvent
-    }
-
-    componentDidMount() {
-        if (this.props.selectedEvent !== null) {
-            this.setState({
-                event: this.props.selectedEvent
-            });
-        }
-    }
-
-    componentWillReceiveProps(nextProps) {
-        if (nextProps.selectedEvent !== this.props.selectedEvent) {
-            this.setState({
-                event: nextProps.selectedEvent || emptyEvent
-            });
-        }
+        event: Object.assign({}, this.props.event)
     }
 
     onInputChange = (evt) => {
@@ -42,8 +21,15 @@ class EventForm extends Component {
         evt.preventDefault();
         if (this.state.event.id) {
             this.props.updateEvent(this.state.event);
+            this.props.history.goBack();
         } else {
-            this.props.createEvent(this.state.event);
+            const newEvent = {
+                ...this.state.event,
+                id: cuid(),
+                hostPhotoURL: '/assets/user.png'
+            }
+            this.props.createEvent(newEvent);
+            this.props.history.push('/events');
         }
     }
 
@@ -101,11 +87,31 @@ class EventForm extends Component {
                     <Button positive type="submit">
                         Submit
                </Button>
-                    <Button type="button" onClick={this.props.handleCancel}>Cancel</Button>
+                    <Button type="button" onClick={this.props.history.goBack}>Cancel</Button>
                 </Form>
             </Segment>
         )
     }
 }
 
-export default EventForm;
+const mapStateToProps = (state, ownProps) => {
+    const eventId = ownProps.match.params.id;
+
+    let event = {
+        title: '',
+        date: '',
+        city: '',
+        venue: '',
+        hostedBy: '',
+    }
+
+    if (eventId && state.events.length > 0) {
+        event = state.events.filter(ev => ev.id === eventId)[0];
+    }
+
+    return {
+        event
+    }
+}
+
+export default connect(mapStateToProps, { createEvent, updateEvent })(EventForm);
